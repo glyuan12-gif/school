@@ -3792,7 +3792,7 @@ input, textarea, select { font-family: inherit; }
 
 .letter-item.sealed {
     cursor: default;
-    min-height: 140px;
+    min-height: auto;
 }
 
 .letter-item.sealed:hover {
@@ -3800,17 +3800,53 @@ input, textarea, select { font-family: inherit; }
     box-shadow: none;
 }
 
-.letter-sealed-overlay {
-    position: absolute;
-    inset: 0;
-    background: var(--bg-secondary);
+.letter-sealed-bg {
+    padding: 20px;
     display: flex;
     flex-direction: column;
+    gap: 12px;
+}
+
+.letter-sealed-info {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    z-index: 1;
-    padding: 20px;
+}
+
+.letter-sealed-written {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.letter-sealed-countdown {
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.letter-sealed-preview {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    filter: blur(4px);
+    user-select: none;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.letter-sealed-open-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0.7;
+    text-align: right;
+}
+
+.letter-sealed-overlay {
+    display: none;
 }
 
 .letter-sealed-icon {
