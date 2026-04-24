@@ -310,6 +310,10 @@
                         <button class="diary-mood-btn" data-days="100" onclick="selectLetterTime(100, this)">100天后</button>
                         <button class="diary-mood-btn" data-days="365" onclick="selectLetterTime(365, this)">1年后</button>
                     </div>
+                    <div class="letter-custom-time">
+                        <span class="diary-mood-label" style="margin-top:10px">或自定义</span>
+                        <input type="datetime-local" id="letterCustomTime" class="diary-date-input" onchange="selectCustomLetterTime(this)">
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -425,7 +429,10 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="diary-date-display" id="diaryDateDisplay"></div>
+                <div class="diary-date-row">
+                    <span class="diary-mood-label">📅 日期时间</span>
+                    <input type="datetime-local" id="diaryDateInput" class="diary-date-input">
+                </div>
                 <textarea id="diaryContent" placeholder="今天想记录什么..." rows="6" maxlength="1000"></textarea>
                 <div class="diary-mood-select">
                     <span class="diary-mood-label">今天的心情</span>

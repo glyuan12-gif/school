@@ -1404,23 +1404,27 @@ function renderDiaryList() {
 function openDiaryEditor(diaryId) {
     editingDiaryId = diaryId || null;
     selectedDiaryMood = '';
-    
+
     const modal = document.getElementById('diaryEditorModal');
-    const dateDisplay = document.getElementById('diaryDateDisplay');
+    const dateInput = document.getElementById('diaryDateInput');
     const contentEl = document.getElementById('diaryContent');
     const publicEl = document.getElementById('diaryPublic');
-    
+
     if (diaryId) {
         const diary = Diary.getAll().find(d => d.id === diaryId);
         if (diary) {
-            dateDisplay.textContent = diary.date;
+            // 解析日期，支持带时间或不带时间
+            const dt = diary.date.includes('T') ? diary.date : diary.date + 'T00:00';
+            dateInput.value = dt.slice(0, 16);
             contentEl.value = diary.content;
             selectedDiaryMood = diary.mood;
             publicEl.checked = diary.isPublic;
         }
     } else {
         const now = new Date();
-        dateDisplay.textContent = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${['日','一','二','三','四','五','六'][now.getDay()]}`;
+        const offset = now.getTimezoneOffset() * 60000;
+        const local = new Date(now - offset);
+        dateInput.value = local.toISOString().slice(0, 16);
         contentEl.value = '';
         publicEl.checked = false;
     }
@@ -1449,11 +1453,12 @@ function selectDiaryMood(mood, el) {
 function saveDiary() {
     const content = document.getElementById('diaryContent').value.trim();
     if (!content) { showToast('请写点什么吧'); return; }
-    
+
     const isPublic = document.getElementById('diaryPublic').checked;
-    const date = editingDiaryId 
-        ? Diary.getAll().find(d => d.id === editingDiaryId)?.date 
-        : new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('diaryDateInput');
+    const dateVal = dateInput.value;
+    // 格式化为 YYYY-MM-DD HH:mm 用于显示
+    const date = dateVal ? dateVal.replace('T', ' ') : new Date().toISOString().split('T')[0];
     
     if (editingDiaryId) {
         Diary.update(editingDiaryId, { content, mood: selectedDiaryMood, isPublic });
@@ -2218,13 +2223,14 @@ const Letter = {
     },
     create(data) {
         const letters = this.getAll();
+        const openAt = data.openAt || (Date.now() + (data.openDays || 7) * 24 * 60 * 60 * 1000);
         const letter = {
             id: 'letter_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
             content: data.content,
             writtenAt: Date.now(),
             writtenDate: new Date().toISOString().split('T')[0],
-            openDays: data.openDays || 7,
-            openAt: Date.now() + (data.openDays || 7) * 24 * 60 * 60 * 1000,
+            openDays: data.openDays || Math.ceil((openAt - Date.now()) / (24 * 60 * 60 * 1000)),
+            openAt: openAt,
             opened: false
         };
         letters.unshift(letter);
@@ -2250,6 +2256,13 @@ const Letter = {
 };
 
 let selectedLetterDays = 3;
+let selectedLetterCustomTime = null;
+
+function formatDateTime(ts) {
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function renderLetterPage() {
     renderLetterList();
@@ -2284,7 +2297,7 @@ function renderLetterList() {
                     <div class="letter-sealed-overlay">
                         <div class="letter-sealed-icon">🔒</div>
                         <div class="letter-sealed-text">封印中，还有 ${daysLeft} 天</div>
-                        <div class="letter-sealed-date">${l.writtenDate} 写 · ${openDate} 可开封</div>
+                        <div class="letter-sealed-date">${l.writtenDate} 写 · ${formatDateTime(l.openAt)} 可开封</div>
                     </div>
                 </div>
             `;
@@ -2304,7 +2317,9 @@ function renderLetterList() {
 
 function openLetterEditor() {
     selectedLetterDays = 3;
+    selectedLetterCustomTime = null;
     document.getElementById('letterContent').value = '';
+    document.getElementById('letterCustomTime').value = '';
     document.querySelectorAll('.letter-time-options .diary-mood-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.days === '3');
     });
@@ -2317,15 +2332,28 @@ function closeLetterEditor() {
 
 function selectLetterTime(days, el) {
     selectedLetterDays = days;
+    selectedLetterCustomTime = null;
+    document.getElementById('letterCustomTime').value = '';
     document.querySelectorAll('.letter-time-options .diary-mood-btn').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
+}
+
+function selectCustomLetterTime(input) {
+    if (input.value) {
+        selectedLetterCustomTime = new Date(input.value).getTime();
+        // 取消预设按钮的选中状态
+        document.querySelectorAll('.letter-time-options .diary-mood-btn').forEach(b => b.classList.remove('active'));
+    } else {
+        selectedLetterCustomTime = null;
+    }
 }
 
 function saveLetter() {
     const content = document.getElementById('letterContent').value.trim();
     if (!content) { showToast('写点什么给未来的自己吧'); return; }
-    
-    Letter.create({ content, openDays: selectedLetterDays });
+
+    const openAt = selectedLetterCustomTime || (Date.now() + selectedLetterDays * 24 * 60 * 60 * 1000);
+    Letter.create({ content, openAt });
     closeLetterEditor();
     renderLetterList();
     showToast('信已埋进树洞，等待回信...');

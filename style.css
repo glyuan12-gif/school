@@ -3373,6 +3373,40 @@ input, textarea, select { font-family: inherit; }
     text-align: center;
 }
 
+.diary-date-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.diary-date-input {
+    flex: 1;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: var(--font-body);
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.diary-date-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.letter-custom-time {
+    margin-top: 6px;
+}
+
+.letter-custom-time .diary-date-input {
+    width: 100%;
+    margin-top: 6px;
+}
+
 .diary-editor-content textarea {
     width: 100%;
     padding: 14px 16px;
