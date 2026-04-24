@@ -3828,11 +3828,14 @@ input, textarea, select { font-family: inherit; }
 }
 
 .letter-sealed-preview {
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.7;
-    filter: blur(4px);
-    user-select: none;
+    display: none;
+}
+
+.letter-sealed-title {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-weight: 500;
     padding: 8px 0;
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
@@ -3851,12 +3854,6 @@ input, textarea, select { font-family: inherit; }
 
 .letter-sealed-icon {
     font-size: 32px;
-    animation: sealedFloat 3s ease-in-out infinite;
-}
-
-@keyframes sealedFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
 }
 
 .letter-sealed-text {

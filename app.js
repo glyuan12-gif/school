@@ -2292,15 +2292,15 @@ function renderLetterList() {
         if (!isReady && !isOpened) {
             // 封印中
             const daysLeft = Math.max(0, Math.ceil((l.openAt - Date.now()) / (24 * 60 * 60 * 1000)));
-            const preview = l.content.length > 40 ? l.content.slice(0, 40) + '...' : l.content;
+            const title = l.content.length > 20 ? l.content.slice(0, 20) + '...' : l.content;
             return `
                 <div class="letter-item sealed">
                     <div class="letter-sealed-bg">
                         <div class="letter-sealed-info">
-                            <span class="letter-sealed-written">${l.writtenDate} 写的信</span>
+                            <span class="letter-sealed-written">${l.writtenDate}</span>
                             <span class="letter-sealed-countdown">🔒 封印中 · 还有 ${daysLeft} 天</span>
                         </div>
-                        <div class="letter-sealed-preview">${escapeHtml(preview)}</div>
+                        <div class="letter-sealed-title">${escapeHtml(title)}</div>
                         <div class="letter-sealed-open-date">${formatDateTime(l.openAt)} 可开封</div>
                     </div>
                 </div>
