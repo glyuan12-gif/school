@@ -1,5 +1,78 @@
 // ===== 匿名社区 - 树洞 v2 =====
 // 新增：垂直场景频道、AI内容审核、随机发现、角色标签、情绪标签
+// 新增：后端 API 对接、叶脉号系统、跨用户私信/信件
+
+// ===== API 基础层 =====
+const API_BASE = 'http://localhost:3000';
+// 后续部署时改为 Railway 的 URL
+
+async function api(method, path, body) {
+    try {
+        const res = await fetch(API_BASE + path, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: body ? JSON.stringify(body) : undefined
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `API ${res.status}`);
+        }
+        return await res.json();
+    } catch (e) {
+        console.warn('[API] 请求失败:', method, path, e.message);
+        return null;
+    }
+}
+
+// ===== 远程用户注册/登录 =====
+const RemoteUser = {
+    async register() {
+        const me = Identity.getMe();
+        const role = Roles.getRole();
+        const result = await api('POST', '/api/register', {
+            nickname: me.name,
+            role: role,
+            mbti: me.mbti,
+            avatar_style: me.style,
+            avatar_emoji: me.emoji,
+            avatar_color: me.color
+        });
+        if (result && result.userId && result.veinId) {
+            DB.set('userId', result.userId);
+            DB.set('veinId', result.veinId);
+            return result;
+        }
+        return null;
+    },
+
+    getUserId() {
+        return DB.get('userId', null);
+    },
+
+    getVeinId() {
+        return DB.get('veinId', null);
+    },
+
+    isRegistered() {
+        return !!this.getUserId() && !!this.getVeinId();
+    },
+
+    async ensureRegistered() {
+        if (this.isRegistered()) return true;
+        const result = await this.register();
+        return !!result;
+    },
+
+    async updateUser(data) {
+        const userId = this.getUserId();
+        if (!userId) return null;
+        return await api('PUT', '/api/user/' + userId, data);
+    },
+
+    async findByVeinId(veinId) {
+        return await api('GET', '/api/user/' + veinId);
+    }
+};
 
 // ===== 数据存储层 =====
 const DB = {
@@ -319,10 +392,28 @@ const Posts = {
             comments: [],
             reports: [],
             auditStatus: 'approved', // approved, pending, rejected
+            show_vein: data.show_vein !== undefined ? data.show_vein : 1,
             createdAt: Date.now()
         };
         posts.unshift(post);
         this.save(posts);
+
+        // 尝试同步到远程
+        (async () => {
+            const userId = RemoteUser.getUserId();
+            if (userId) {
+                await api('POST', '/api/posts', {
+                    user_id: userId,
+                    title: post.title,
+                    content: post.content,
+                    channel: post.channel,
+                    mood: post.mood,
+                    tags: post.tags,
+                    show_vein: post.show_vein
+                });
+            }
+        })();
+
         return post;
     },
 
@@ -447,6 +538,21 @@ const Messages = {
         conversation.updatedAt = Date.now();
 
         this.save(msgs);
+
+        // 尝试同步到远程（跨用户私信）
+        (async () => {
+            const myUserId = RemoteUser.getUserId();
+            // targetUserId 可能是本地 id 或远程 userId
+            const otherRemoteId = DB.get('remoteUserId_' + targetUserId) || targetUserId;
+            if (myUserId && otherRemoteId && otherRemoteId !== myId) {
+                await api('POST', '/api/messages', {
+                    from_id: myUserId,
+                    to_id: otherRemoteId,
+                    content: text
+                });
+            }
+        })();
+
         return conversation;
     },
 
@@ -482,6 +588,13 @@ const Messages = {
                 DB.set('read_' + convId, lastMsg.createdAt);
             }
         }
+    },
+
+    // 从远程拉取私信
+    async fetchRemoteMessages(otherId) {
+        const myUserId = RemoteUser.getUserId();
+        if (!myUserId || !otherId) return null;
+        return await api('GET', '/api/messages/' + myUserId + '?other_id=' + otherId);
     }
 };
 
@@ -571,8 +684,65 @@ function initHero() {
 }
 
 // ===== 首页渲染 =====
-function renderPostList() {
+async function renderPostList() {
     let posts = Posts.getAll();
+
+    // 尝试从远程拉取帖子（合并，不覆盖本地）
+    try {
+        const channel = currentChannel !== 'all' ? currentChannel : undefined;
+        const remotePosts = await api('GET', '/api/posts?page=1&limit=50' + (channel ? '&channel=' + channel : ''));
+        if (remotePosts && Array.isArray(remotePosts) && remotePosts.length > 0) {
+            const localIds = new Set(posts.map(p => p.id));
+            const localRemoteIds = new Set(posts.filter(p => p._remoteId).map(p => p._remoteId));
+            remotePosts.forEach(rp => {
+                if (!localRemoteIds.has(rp.id)) {
+                    const localPost = {
+                        id: 'remote_p_' + rp.id,
+                        _remoteId: rp.id,
+                        author: {
+                            name: rp.nickname || '匿名用户',
+                            color: rp.avatar_color || '#5b8c6e',
+                            id: 'remote_' + rp.user_id,
+                            emoji: rp.avatar_emoji || null,
+                            style: rp.avatar_style || 'emoji',
+                            role: rp.role || null,
+                            mbti: rp.mbti || null
+                        },
+                        title: rp.title,
+                        content: rp.content,
+                        tags: rp.tags || [],
+                        channel: rp.channel || '树洞',
+                        mood: rp.mood || null,
+                        image: null,
+                        likes: [],
+                        comments: (rp.comments || []).map(c => ({
+                            id: 'rc_' + (c.id || Math.random().toString(36).substr(2, 6)),
+                            author: {
+                                name: c.nickname || '匿名用户',
+                                color: c.avatar_color || '#5b8c6e',
+                                id: 'remote_' + (c.user_id || ''),
+                                emoji: c.avatar_emoji || null,
+                                style: c.avatar_style || 'emoji',
+                                role: c.role || null,
+                                mbti: c.mbti || null
+                            },
+                            text: c.content || c.text || '',
+                            createdAt: new Date(c.created_at || Date.now()).getTime()
+                        })),
+                        reports: [],
+                        auditStatus: 'approved',
+                        show_vein: rp.show_vein || 0,
+                        createdAt: new Date(rp.created_at || Date.now()).getTime()
+                    };
+                    posts.push(localPost);
+                }
+            });
+            // 按时间排序
+            posts.sort((a, b) => b.createdAt - a.createdAt);
+        }
+    } catch (e) {
+        // 远程拉取失败，使用本地数据
+    }
 
     // 过滤掉被拒绝的帖子
     posts = posts.filter(p => p.auditStatus !== 'rejected');
@@ -703,6 +873,7 @@ function renderPostDetail(postId) {
                     ${Identity.getNameHTML(post.author)}
                     ${Roles.getBadgeHTML(post.author.role)}
                     ${Identity.getMbtiBadgeHTML(post.author)}
+                    ${post.show_vein ? `<span class="vein-badge" title="叶脉号">🌿 ${escapeHtml(RemoteUser.getVeinId() || '')}</span>` : ''}
                 </div>
                 <span class="detail-time">${timeAgo(post.createdAt)}</span>
             </div>
@@ -936,22 +1107,96 @@ function filterByChannel(channel) {
 // ===== 事件处理 =====
 
 let searchTimeout;
+let searchResultUser = null; // 搜索到的用户卡片
+
 function handleSearch(value) {
     const clearBtn = document.getElementById('searchClearBtn');
     if (clearBtn) clearBtn.style.display = value.trim() ? 'flex' : 'none';
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
+    searchTimeout = setTimeout(async () => {
         currentSearch = value.trim();
+        searchResultUser = null;
+
+        // 检测是否为叶脉号（7位大写字母+数字）
+        const veinIdPattern = /^[A-Z0-9]{7}$/;
+        if (veinIdPattern.test(currentSearch)) {
+            const user = await RemoteUser.findByVeinId(currentSearch);
+            if (user) {
+                searchResultUser = user;
+                renderSearchUserCard(user);
+                return;
+            }
+        }
+
+        // 清除用户卡片
+        const existingCard = document.getElementById('searchUserCard');
+        if (existingCard) existingCard.remove();
+
         if (currentPage === 'home') renderPostList();
     }, 300);
 }
 
+function renderSearchUserCard(user) {
+    // 移除旧卡片
+    const existingCard = document.getElementById('searchUserCard');
+    if (existingCard) existingCard.remove();
+
+    if (!user.allow_find) {
+        const card = document.createElement('div');
+        card.id = 'searchUserCard';
+        card.className = 'search-user-card';
+        card.innerHTML = `
+            <div class="search-user-card-inner">
+                <div class="search-user-not-found">
+                    <span class="search-user-icon">🔒</span>
+                    <p>该用户未开放叶脉号查找</p>
+                </div>
+            </div>
+        `;
+        document.getElementById('postList').before(card);
+        return;
+    }
+
+    const mbtiInfo = user.mbti ? Identity.mbtiInfo[user.mbti] : null;
+    const card = document.createElement('div');
+    card.id = 'searchUserCard';
+    card.className = 'search-user-card';
+    card.innerHTML = `
+        <div class="search-user-card-inner">
+            <div class="search-user-avatar" style="background:${user.avatar_color || '#5b8c6e'};width:48px;height:48px;font-size:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white">
+                ${user.avatar_emoji || user.nickname?.charAt(0) || '?'}
+            </div>
+            <div class="search-user-info">
+                <div class="search-user-name">${escapeHtml(user.nickname || '匿名用户')}</div>
+                <div class="search-user-vein">叶脉号：${escapeHtml(user.veinId || '')}</div>
+                ${mbtiInfo ? `<div class="search-user-mbti">${mbtiInfo.emoji} ${user.mbti}</div>` : ''}
+            </div>
+            <div class="search-user-actions">
+                <button class="btn-primary btn-sm" onclick="openDmToRemoteUser('${user.userId}', '${escapeHtml(user.nickname || '匿名用户').replace(/'/g, "\\'")}', '${user.avatar_color || '#5b8c6e'}', '${user.mbti || ''}')">写信</button>
+                <button class="btn-ghost btn-sm" onclick="openDmToRemoteUser('${user.userId}', '${escapeHtml(user.nickname || '匿名用户').replace(/'/g, "\\'")}', '${user.avatar_color || '#5b8c6e'}', '${user.mbti || ''}');navigate('messages')">私信</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('postList').before(card);
+}
+
+function openDmToRemoteUser(remoteUserId, name, color, mbti) {
+    // 缓存远程 userId 映射
+    const localId = 'remote_' + remoteUserId;
+    DB.set('remoteUserId_' + localId, remoteUserId);
+    openDmModal(localId, name, color, mbti);
+}
+
 function clearSearch() {
     currentSearch = '';
+    searchResultUser = null;
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.value = '';
     const clearBtn = document.getElementById('searchClearBtn');
     if (clearBtn) clearBtn.style.display = 'none';
+    // 清除用户卡片
+    const existingCard = document.getElementById('searchUserCard');
+    if (existingCard) existingCard.remove();
     renderPostList();
     if (searchInput) searchInput.focus();
 }
@@ -1050,6 +1295,8 @@ function handleCreatePost(event) {
     const channel = channelEl ? channelEl.value : '树洞';
     const moodEl = document.querySelector('#moodSelect input:checked');
     const mood = moodEl ? moodEl.value : null;
+    const showVeinEl = document.getElementById('showVeinToggle');
+    const showVein = showVeinEl ? (showVeinEl.checked ? 1 : 0) : 1;
 
     if (!title || !content) {
         showToast('请填写标题和内容');
@@ -1071,7 +1318,8 @@ function handleCreatePost(event) {
         tags,
         channel,
         mood,
-        image: uploadedImage
+        image: uploadedImage,
+        show_vein: showVein
     });
 
     showToast('发布成功！');
@@ -2140,7 +2388,36 @@ function openSettingsModal() {
     // 更新预览
     updateSettingsPreview();
 
+    // 叶脉号展示
+    const veinId = RemoteUser.getVeinId();
+    const veinSection = document.getElementById('veinIdSection');
+    if (veinSection) {
+        if (veinId) {
+            veinSection.style.display = '';
+            document.getElementById('veinIdDisplay').textContent = veinId;
+        } else {
+            veinSection.style.display = 'none';
+        }
+    }
+
     document.getElementById('settingsModal').style.display = 'flex';
+}
+
+function copyVeinId() {
+    const veinId = RemoteUser.getVeinId();
+    if (!veinId) return;
+    navigator.clipboard.writeText(veinId).then(() => {
+        showToast('叶脉号已复制');
+    }).catch(() => {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = veinId;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('叶脉号已复制');
+    });
 }
 
 function closeSettingsModal() {
@@ -2208,6 +2485,24 @@ function saveSettings() {
     DB.set('my_identity', me);
     const roleEl = document.querySelector('input[name="settingsRole"]:checked');
     if(roleEl) Roles.setRole(roleEl.value);
+
+    // 读取"允许被查找"开关状态
+    const allowFindEl = document.getElementById('allowFindToggle');
+    const allowFind = allowFindEl ? allowFindEl.checked : true;
+
+    // 同步到远程
+    (async () => {
+        await RemoteUser.updateUser({
+            nickname: me.name,
+            role: Roles.getRole(),
+            mbti: me.mbti,
+            avatar_style: me.style,
+            avatar_emoji: me.emoji,
+            avatar_color: me.color,
+            allow_find: allowFind ? 1 : 0
+        });
+    })();
+
     closeSettingsModal();
     showToast('身份设置已保存');
 
@@ -2257,10 +2552,26 @@ const Letter = {
             writtenDate: new Date().toISOString().split('T')[0],
             openDays: data.openDays || Math.ceil((openAt - Date.now()) / (24 * 60 * 60 * 1000)),
             openAt: openAt,
-            opened: false
+            opened: false,
+            to_user_id: data.to_user_id || null, // 跨用户信件
+            from_user_id: data.from_user_id || null
         };
         letters.unshift(letter);
         this.save(letters);
+
+        // 尝试同步到远程
+        (async () => {
+            const userId = RemoteUser.getUserId();
+            if (userId) {
+                await api('POST', '/api/letters', {
+                    from_id: userId,
+                    to_id: data.to_user_id || userId,
+                    content: data.content,
+                    open_at: new Date(openAt).toISOString()
+                });
+            }
+        })();
+
         return letter;
     },
     open(id) {
@@ -2271,6 +2582,11 @@ const Letter = {
             letters[idx].openedAt = Date.now();
             this.save(letters);
         }
+
+        // 尝试远程开封
+        (async () => {
+            await api('PUT', '/api/letters/' + id + '/open');
+        })();
     },
     delete(id) {
         const letters = this.getAll().filter(l => l.id !== id);
@@ -2278,11 +2594,26 @@ const Letter = {
     },
     isReady(letter) {
         return Date.now() >= letter.openAt;
+    },
+
+    // 从远程获取收件箱
+    async fetchInbox() {
+        const userId = RemoteUser.getUserId();
+        if (!userId) return null;
+        return await api('GET', '/api/letters/inbox?user_id=' + userId);
+    },
+
+    // 从远程获取已发送
+    async fetchSent() {
+        const userId = RemoteUser.getUserId();
+        if (!userId) return null;
+        return await api('GET', '/api/letters/sent?user_id=' + userId);
     }
 };
 
 let selectedLetterDays = 3;
 let selectedLetterCustomTime = null;
+let letterTab = 'all'; // 'all', 'inbox', 'sent'
 
 function formatDateTime(ts) {
     const d = new Date(ts);
@@ -2294,23 +2625,89 @@ function renderLetterPage() {
     renderLetterList();
 }
 
-function renderLetterList() {
+function switchLetterTab(tab) {
+    letterTab = tab;
+    document.querySelectorAll('.letter-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    renderLetterList();
+}
+
+async function renderLetterList() {
     const list = document.getElementById('letterList');
     if (!list) return;
-    
-    const letters = Letter.getAll();
+
+    // 渲染 tab 按钮
+    const tabHtml = `
+        <div class="letter-tabs">
+            <button class="letter-tab-btn ${letterTab === 'all' ? 'active' : ''}" data-tab="all" onclick="switchLetterTab('all')">全部</button>
+            <button class="letter-tab-btn ${letterTab === 'inbox' ? 'active' : ''}" data-tab="inbox" onclick="switchLetterTab('inbox')">收件箱</button>
+            <button class="letter-tab-btn ${letterTab === 'sent' ? 'active' : ''}" data-tab="sent" onclick="switchLetterTab('sent')">已发送</button>
+        </div>
+    `;
+
+    let letters = Letter.getAll();
+
+    // 如果是收件箱或已发送 tab，尝试从远程拉取
+    if (letterTab === 'inbox') {
+        const remoteInbox = await Letter.fetchInbox();
+        if (remoteInbox && Array.isArray(remoteInbox) && remoteInbox.length > 0) {
+            // 合并远程信件（去重）
+            const localIds = new Set(letters.map(l => l.id));
+            remoteInbox.forEach(rl => {
+                if (!localIds.has(rl.id)) {
+                    letters.push({
+                        id: rl.id,
+                        content: rl.content,
+                        writtenAt: new Date(rl.created_at || rl.writtenAt).getTime(),
+                        writtenDate: (rl.created_at || rl.writtenAt || '').split('T')[0],
+                        openDays: rl.open_days || 7,
+                        openAt: new Date(rl.open_at || rl.openAt).getTime(),
+                        opened: !!rl.opened,
+                        from_user_id: rl.from_id || null,
+                        to_user_id: rl.to_id || null
+                    });
+                }
+            });
+            Letter.save(letters);
+        }
+        letters = letters.filter(l => l.to_user_id && l.to_user_id !== RemoteUser.getUserId());
+    } else if (letterTab === 'sent') {
+        const remoteSent = await Letter.fetchSent();
+        if (remoteSent && Array.isArray(remoteSent) && remoteSent.length > 0) {
+            const localIds = new Set(letters.map(l => l.id));
+            remoteSent.forEach(rl => {
+                if (!localIds.has(rl.id)) {
+                    letters.push({
+                        id: rl.id,
+                        content: rl.content,
+                        writtenAt: new Date(rl.created_at || rl.writtenAt).getTime(),
+                        writtenDate: (rl.created_at || rl.writtenAt || '').split('T')[0],
+                        openDays: rl.open_days || 7,
+                        openAt: new Date(rl.open_at || rl.openAt).getTime(),
+                        opened: !!rl.opened,
+                        from_user_id: rl.from_id || null,
+                        to_user_id: rl.to_id || null
+                    });
+                }
+            });
+            Letter.save(letters);
+        }
+        letters = letters.filter(l => l.from_user_id && l.from_user_id === RemoteUser.getUserId() && l.to_user_id && l.to_user_id !== RemoteUser.getUserId());
+    }
+
     if (letters.length === 0) {
-        list.innerHTML = `
+        list.innerHTML = tabHtml + `
             <div class="letter-empty">
                 <div class="letter-empty-icon">📬</div>
-                <p>还没有回信</p>
-                <p style="font-size:13px;margin-top:4px">写一封信给未来的自己吧</p>
+                <p>${letterTab === 'inbox' ? '收件箱为空' : letterTab === 'sent' ? '还没有发送信件' : '还没有回信'}</p>
+                <p style="font-size:13px;margin-top:4px">${letterTab === 'all' ? '写一封信给未来的自己吧' : letterTab === 'inbox' ? '等待别人给你写信' : '给朋友写一封信吧'}</p>
             </div>
         `;
         return;
     }
-    
-    list.innerHTML = letters.map(l => {
+
+    list.innerHTML = tabHtml + letters.map(l => {
         const isReady = Letter.isReady(l);
         const isOpened = l.opened;
         const openDate = new Date(l.openAt).toISOString().split('T')[0];
@@ -2350,6 +2747,8 @@ function openLetterEditor() {
     selectedLetterCustomTime = null;
     document.getElementById('letterContent').value = '';
     document.getElementById('letterCustomTime').value = '';
+    const recipientInput = document.getElementById('letterRecipientVeinId');
+    if (recipientInput) recipientInput.value = '';
     document.querySelectorAll('.letter-time-options .diary-mood-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.days === '3');
     });
@@ -2394,10 +2793,29 @@ function saveLetter() {
         showToast('请选择未来的时间');
         return;
     }
-    Letter.create({ content, openAt });
+
+    // 检查是否有收件人叶脉号
+    const recipientVeinId = document.getElementById('letterRecipientVeinId');
+    let toUserId = null;
+    if (recipientVeinId && recipientVeinId.value.trim()) {
+        const veinId = recipientVeinId.value.trim().toUpperCase();
+        if (!/^[A-Z0-9]{7}$/.test(veinId)) {
+            showToast('叶脉号格式不正确，应为7位大写字母和数字');
+            return;
+        }
+        // 查找用户获取 userId
+        const user = await RemoteUser.findByVeinId(veinId);
+        if (!user) {
+            showToast('未找到该叶脉号对应的用户');
+            return;
+        }
+        toUserId = user.userId;
+    }
+
+    Letter.create({ content, openAt, to_user_id: toUserId });
     closeLetterEditor();
     renderLetterList();
-    showToast('信已埋进树洞，等待回信...');
+    showToast(toUserId ? '信已发送给对方' : '信已埋进树洞，等待回信...');
 }
 
 function viewLetter(id) {
@@ -2451,6 +2869,13 @@ function init() {
     if (!Roles.getRole()) {
         document.getElementById('roleModal').style.display = 'flex';
     }
+
+    // 自动注册到远程服务器
+    RemoteUser.ensureRegistered().then(success => {
+        if (success) {
+            console.log('[RemoteUser] 已注册，叶脉号:', RemoteUser.getVeinId());
+        }
+    });
 
     // 生成示例数据（首次使用）
     if (Posts.getAll().length === 0) {

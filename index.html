@@ -179,6 +179,13 @@
                     <div class="form-section form-section-optional">
                         <div class="form-section-hint">以下为可选，帮助他人更好地理解你</div>
                     <div class="form-group">
+                        <label class="settings-toggle" style="margin-bottom:8px">
+                            <input type="checkbox" id="showVeinToggle" checked>
+                            <span class="settings-toggle-slider"></span>
+                            <span class="settings-toggle-text">展示叶脉号</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
                         <label>此刻的心情</label>
                         <div class="mood-select" id="moodSelect">
                             <label class="mood-option" data-mood="开心"><input type="radio" name="mood" value="开心"> 😊 开心</label>
@@ -302,6 +309,10 @@
                 </button>
             </div>
             <div class="modal-body">
+                <div class="form-group" style="margin-bottom:12px">
+                    <label>收件人叶脉号（可选，不填则写给自己）</label>
+                    <input type="text" id="letterRecipientVeinId" placeholder="输入7位叶脉号，如 A3X9K2M" maxlength="7" style="text-transform:uppercase;width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-secondary);color:var(--text-primary);font-size:14px;font-family:var(--font-body);outline:none;transition:border-color var(--transition)" oninput="this.value=this.value.replace(/[^A-Z0-9]/g,'').toUpperCase()">
+                </div>
                 <textarea id="letterContent" placeholder="你想对未来的自己说什么..." rows="6" maxlength="1000"></textarea>
                 <div class="letter-time-select">
                     <span class="diary-mood-label">开封时间</span>
@@ -482,6 +493,28 @@
             <div class="modal-body">
                 <!-- 头像预览区（顶部） -->
                 <div class="settings-preview" id="settingsPreview"></div>
+
+                <!-- 叶脉号展示 -->
+                <div class="settings-section" id="veinIdSection" style="display:none">
+                    <label class="settings-label">叶脉号</label>
+                    <div class="vein-id-display">
+                        <span class="vein-id-value" id="veinIdDisplay"></span>
+                        <button class="btn-ghost btn-sm" onclick="copyVeinId()" title="复制叶脉号">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            复制
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 允许被查找开关 -->
+                <div class="settings-section">
+                    <label class="settings-label">隐私设置</label>
+                    <label class="settings-toggle">
+                        <input type="checkbox" id="allowFindToggle" checked>
+                        <span class="settings-toggle-slider"></span>
+                        <span class="settings-toggle-text">允许通过叶脉号找到我</span>
+                    </label>
+                </div>
 
                 <!-- 昵称 -->
                 <div class="settings-section">
