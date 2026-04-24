@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>树洞 · 匿名分享</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai:wght@300;400;700&family=Noto+Sans+SC:wght@300;400;500;600&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 装饰背景层 -->
+    <div class="bg-decor">
+        <div class="bg-orb bg-orb-1"></div>
+        <div class="bg-orb bg-orb-2"></div>
+        <div class="bg-orb bg-orb-3"></div>
+        <div class="bg-grain"></div>
+    </div>
+
+    <!-- 顶部导航 -->
+    <nav id="navbar">
+        <div class="nav-inner">
+            <a href="#" class="logo" onclick="navigate('home')">
+                <span class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 64 64" fill="none">
+                        <!-- 月牙 -->
+                        <circle cx="32" cy="20" r="10" fill="currentColor" opacity="0.2"/>
+                        <circle cx="36" cy="18" r="9" fill="var(--bg-primary)"/>
+                        <!-- 树冠 -->
+                        <path d="M32 18 C32 18, 18 30, 18 40 C18 48, 24 54, 32 56 C40 54, 46 48, 46 40 C46 30, 32 18, 32 18Z" fill="currentColor" opacity="0.15"/>
+                        <path d="M32 24 C32 24, 22 33, 22 40 C22 46, 26 50, 32 52 C38 50, 42 46, 42 40 C42 33, 32 24, 32 24Z" fill="currentColor" opacity="0.25"/>
+                        <!-- 树洞（拱形开口） -->
+                        <path d="M28 46 C28 46, 28 38, 32 36 C36 38, 36 46, 36 46" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+                        <!-- 小星星 -->
+                        <circle cx="48" cy="14" r="1.2" fill="currentColor" opacity="0.4"/>
+                        <circle cx="14" cy="24" r="0.8" fill="currentColor" opacity="0.3"/>
+                        <circle cx="52" cy="28" r="0.6" fill="currentColor" opacity="0.25"/>
+                    </svg>
+                </span>
+                <span class="logo-text">树洞</span>
+                <span class="logo-dot"></span>
+            </a>
+            <button class="about-link" onclick="openAboutModal()">关于</button>
+            <div class="nav-actions">
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input type="text" id="searchInput" placeholder="搜索..." oninput="handleSearch(this.value)">
+                </div>
+                <button class="nav-btn" onclick="openRandomDiscover()" title="随机发现">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="m18 14 4 4-4 4"/></svg>
+                </button>
+                <button class="nav-btn" onclick="navigate('diary')" title="树洞日记">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </button>
+                <button class="nav-btn" onclick="navigate('letter')" title="树洞回信">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </button>
+                <button class="nav-btn nav-btn-accent" onclick="navigate('create')" title="发帖">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+                <button class="nav-btn" onclick="navigate('messages')" title="私信" id="msgBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span class="msg-badge" id="msgBadge" style="display:none">0</span>
+                </button>
+                <div class="nav-identity" id="navIdentity" onclick="openSettingsModal()" title="我的身份"></div>
+                <button class="nav-btn theme-toggle" onclick="openThemeModal()" title="切换主题">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main id="app">
+        <!-- 首页 -->
+        <section id="page-home" class="page active">
+            <div class="home-header" id="homeHeader">
+                <div class="hero-badge">🌿 匿名 · 安全 · 自由</div>
+                <h1 class="hero-title">在这里<br><span class="gradient-text">做真实的自己</span></h1>
+                <p class="hero-subtitle">无需注册，完全匿名。把心事说给陌生人听。</p>
+                <div class="hero-actions">
+                    <button class="btn-primary btn-lg" onclick="navigate('create')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+                        开始分享
+                    </button>
+                    <button class="btn-ghost btn-lg" onclick="openRandomDiscover()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="m18 2 4 4-4 4"/></svg>
+                        随机发现
+                    </button>
+                </div>
+                <button class="hero-collapse-btn" id="heroCollapseBtn" onclick="toggleHero()" title="收起">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="m18 15-6-6-6 6"/></svg>
+                </button>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="filter-bar">
+                <div class="filter-scroll">
+                    <button class="filter-chip active" data-channel="all" onclick="filterByChannel('all')">🌐 全部</button>
+                    <button class="filter-chip" data-channel="校园" onclick="filterByChannel('校园')">🎓 校园</button>
+                    <button class="filter-chip" data-channel="职场" onclick="filterByChannel('职场')">💼 职场</button>
+                    <button class="filter-chip" data-channel="情感" onclick="filterByChannel('情感')">💕 情感</button>
+                    <button class="filter-chip" data-channel="生活" onclick="filterByChannel('生活')">🏠 生活</button>
+                    <button class="filter-chip" data-channel="树洞" onclick="filterByChannel('树洞')">🌳 树洞</button>
+                    <span class="filter-divider"></span>
+                    <button class="filter-chip" data-tag="all" onclick="filterByTag('all')">标签</button>
+                    <button class="filter-chip" data-tag="日常" onclick="filterByTag('日常')">日常</button>
+                    <button class="filter-chip" data-tag="心事" onclick="filterByTag('心事')">心事</button>
+                    <button class="filter-chip" data-tag="吐槽" onclick="filterByTag('吐槽')">吐槽</button>
+                    <button class="filter-chip" data-tag="求助" onclick="filterByTag('求助')">求助</button>
+                    <button class="filter-chip" data-tag="分享" onclick="filterByTag('分享')">分享</button>
+                </div>
+                <div class="sort-select">
+                    <select id="mbtiFilter" onchange="filterByMbti(this.value)">
+                        <option value="all">全部人格</option>
+                    </select>
+                    <select id="sortSelect" onchange="handleSort(this.value)">
+                        <option value="newest">最新</option>
+                        <option value="popular">最热</option>
+                        <option value="commented">热议</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 帖子列表 -->
+            <div id="postList" class="post-list"></div>
+            <div id="emptyState" class="empty-state" style="display:none">
+                <div class="empty-illustration">
+                    <div class="empty-tree-wrap">
+                        <div class="empty-tree">🌳</div>
+                        <div class="empty-glow"></div>
+                    </div>
+                    <div class="empty-leaves">
+                        <span>🍃</span><span>🍂</span><span>🌿</span>
+                    </div>
+                </div>
+                <h3 class="empty-title">这片森林还安静着</h3>
+                <p class="empty-desc">种下第一棵树，让故事从这里开始</p>
+                <p class="empty-sub-hint">你的心事，值得被一棵树记住</p>
+                <button class="btn-primary" onclick="navigate('create')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    写下第一个故事
+                </button>
+            </div>
+        </section>
+
+        <!-- 发帖页 -->
+        <section id="page-create" class="page">
+            <div class="create-container">
+                <div class="page-header">
+                    <h2 class="page-title">写下你的想法</h2>
+                    <p class="page-desc">你的身份完全匿名，放心表达吧</p>
+                </div>
+                <div class="anonymous-identity" id="myIdentity"></div>
+                <form id="postForm" onsubmit="handleCreatePost(event)">
+                    <div class="form-section">
+                    <div class="form-group">
+                        <label>选择频道</label>
+                        <div class="channel-select" id="channelSelect">
+                            <label class="channel-option"><input type="radio" name="channel" value="校园"> 🎓 校园</label>
+                            <label class="channel-option"><input type="radio" name="channel" value="职场"> 💼 职场</label>
+                            <label class="channel-option"><input type="radio" name="channel" value="情感"> 💕 情感</label>
+                            <label class="channel-option"><input type="radio" name="channel" value="生活"> 🏠 生活</label>
+                            <label class="channel-option"><input type="radio" name="channel" value="树洞" checked> 🌳 树洞</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>标题</label>
+                        <input type="text" id="postTitle" placeholder="给帖子起个标题..." required maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label>内容</label>
+                        <textarea id="postContent" placeholder="分享你的故事、经验或心事..." required maxlength="5000" rows="8"></textarea>
+                        <div class="char-count"><span id="contentCount">0</span>/5000</div>
+                    </div>
+                    </div>
+                    <div class="form-section form-section-optional">
+                        <div class="form-section-hint">以下为可选，帮助他人更好地理解你</div>
+                    <div class="form-group">
+                        <label>此刻的心情</label>
+                        <div class="mood-select" id="moodSelect">
+                            <label class="mood-option" data-mood="开心"><input type="radio" name="mood" value="开心"> 😊 开心</label>
+                            <label class="mood-option" data-mood="平静"><input type="radio" name="mood" value="平静"> 😌 平静</label>
+                            <label class="mood-option" data-mood="感动"><input type="radio" name="mood" value="感动"> 🥹 感动</label>
+                            <label class="mood-option" data-mood="焦虑"><input type="radio" name="mood" value="焦虑"> 😰 焦虑</label>
+                            <label class="mood-option" data-mood="难过"><input type="radio" name="mood" value="难过"> 😢 难过</label>
+                            <label class="mood-option" data-mood="愤怒"><input type="radio" name="mood" value="愤怒"> 😤 愤怒</label>
+                            <label class="mood-option" data-mood="迷茫"><input type="radio" name="mood" value="迷茫"> 🌀 迷茫</label>
+                            <label class="mood-option" data-mood="期待"><input type="radio" name="mood" value="期待"> ✨ 期待</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>标签（可多选）</label>
+                        <div class="tag-select" id="tagSelect">
+                            <label class="tag-option"><input type="checkbox" name="tags" value="日常"> 🌸 日常</label>
+                            <label class="tag-option"><input type="checkbox" name="tags" value="经验"> 💡 经验</label>
+                            <label class="tag-option"><input type="checkbox" name="tags" value="心事"> 💭 心事</label>
+                            <label class="tag-option"><input type="checkbox" name="tags" value="吐槽"> 😤 吐槽</label>
+                            <label class="tag-option"><input type="checkbox" name="tags" value="求助"> 🆘 求助</label>
+                            <label class="tag-option"><input type="checkbox" name="tags" value="分享"> 🎁 分享</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>图片（可选）</label>
+                        <div class="image-upload" id="imageUpload">
+                            <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <p>点击上传图片</p>
+                                <span>支持 JPG、PNG，最大 2MB</span>
+                            </div>
+                            <input type="file" id="imageInput" accept="image/jpeg,image/png,image/gif" onchange="handleImageUpload(event)" style="display:none">
+                            <div id="imagePreview" class="image-preview" style="display:none">
+                                <img id="previewImg" src="" alt="预览">
+                                <button type="button" class="remove-img" onclick="removeImage()">×</button>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-ghost" onclick="handleCancelCreate()">取消</button>
+                        <button type="submit" class="btn-primary">匿名发布</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- 帖子详情页 -->
+        <section id="page-detail" class="page">
+            <div class="detail-container" id="postDetail"></div>
+        </section>
+
+        <!-- 私信页 -->
+        <section id="page-messages" class="page">
+            <div class="messages-container">
+                <div class="messages-sidebar" id="messagesSidebar">
+                    <div class="page-header">
+                        <h2 class="page-title">私信</h2>
+                        <p class="page-desc">匿名对话，安心倾诉</p>
+                    </div>
+                    <div id="conversationList" class="conversation-list"></div>
+                    <div id="noConversations" class="empty-state">
+                        <div class="empty-icon">💌</div>
+                        <p>暂无私信</p>
+                        <span>浏览帖子并发起私信吧</span>
+                    </div>
+                </div>
+                <div class="messages-chat" id="messagesChat">
+                    <div class="chat-placeholder">
+                        <div class="empty-icon">💬</div>
+                        <p>选择一个对话开始聊天</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 树洞日记页 -->
+        <section id="page-diary" class="page">
+            <div class="page-header">
+                <h2 class="page-title">树洞日记</h2>
+                <p class="page-subtitle">只属于你的秘密花园</p>
+            </div>
+            <div class="diary-container">
+                <!-- 日历视图 -->
+                <div class="diary-calendar" id="diaryCalendar"></div>
+                <!-- 日记列表 -->
+                <div class="diary-list" id="diaryList"></div>
+                <!-- 写日记按钮 -->
+                <button class="diary-fab" onclick="openDiaryEditor()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- 树洞回信页 -->
+        <section id="page-letter" class="page">
+            <div class="page-header">
+                <h2 class="page-title">树洞回信</h2>
+                <p class="page-subtitle">把心事埋进树洞，等待未来的回信</p>
+            </div>
+            <div class="letter-container">
+                <div class="letter-list" id="letterList"></div>
+                <button class="diary-fab" onclick="openLetterEditor()" style="background:var(--accent-warm)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 写信给未来的自己模态框 -->
+    <div id="letterEditorModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeLetterEditor()"></div>
+        <div class="modal-content diary-editor-content">
+            <div class="modal-header">
+                <h3>写信给未来的自己</h3>
+                <button class="modal-close" onclick="closeLetterEditor()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <textarea id="letterContent" placeholder="你想对未来的自己说什么..." rows="6" maxlength="1000"></textarea>
+                <div class="letter-time-select">
+                    <span class="diary-mood-label">开封时间</span>
+                    <div class="letter-time-options">
+                        <button class="diary-mood-btn active" data-days="3" onclick="selectLetterTime(3, this)">3天后</button>
+                        <button class="diary-mood-btn" data-days="7" onclick="selectLetterTime(7, this)">7天后</button>
+                        <button class="diary-mood-btn" data-days="30" onclick="selectLetterTime(30, this)">30天后</button>
+                        <button class="diary-mood-btn" data-days="100" onclick="selectLetterTime(100, this)">100天后</button>
+                        <button class="diary-mood-btn" data-days="365" onclick="selectLetterTime(365, this)">1年后</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeLetterEditor()">取消</button>
+                <button class="btn-primary" onclick="saveLetter()">埋进树洞</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看回信模态框 -->
+    <div id="letterViewModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeLetterView()"></div>
+        <div class="modal-content diary-view-content">
+            <div class="modal-header">
+                <h3>📬 树洞回信</h3>
+                <button class="modal-close" onclick="closeLetterView()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="letterViewBody"></div>
+        </div>
+    </div>
+
+    <!-- 私信模态框 -->
+    <div id="dmModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeDmModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>发送私信</h3>
+                <button class="modal-close" onclick="closeDmModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="dm-notice">🔒 你的身份对对方完全匿名</p>
+                <textarea id="dmMessage" placeholder="写下你想说的话..." rows="4" maxlength="1000"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeDmModal()">取消</button>
+                <button class="btn-primary" onclick="sendDirectMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 举报模态框 -->
+    <div id="reportModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeReportModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>举报内容</h3>
+                <button class="modal-close" onclick="closeReportModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="dm-notice">🛡️ 保护社区环境，人人有责</p>
+                <div class="report-reasons">
+                    <label class="report-option"><input type="radio" name="reportReason" value="spam" checked> 📢 垃圾广告</label>
+                    <label class="report-option"><input type="radio" name="reportReason" value="abuse"> 😤 人身攻击/辱骂</label>
+                    <label class="report-option"><input type="radio" name="reportReason" value="harassment"> 😱 骚扰/跟踪</label>
+                    <label class="report-option"><input type="radio" name="reportReason" value="rumor"> 📰 虚假信息/造谣</label>
+                    <label class="report-option"><input type="radio" name="reportReason" value="inappropriate"> 🔞 不当内容</label>
+                    <label class="report-option"><input type="radio" name="reportReason" value="other"> ❓ 其他</label>
+                </div>
+                <textarea id="reportDetail" placeholder="补充说明（可选）..." rows="3" maxlength="200" style="margin-top:12px"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeReportModal()">取消</button>
+                <button class="btn-primary btn-danger" onclick="submitReport()">提交举报</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 随机发现模态框 -->
+    <div id="discoverModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeDiscoverModal()"></div>
+        <div class="modal-content discover-modal-content">
+            <div class="discover-header">
+                <h3>🎲 随机发现</h3>
+                <button class="modal-close" onclick="closeDiscoverModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="discover-body" id="discoverBody">
+                <div class="discover-card-container">
+                    <div class="discover-card" id="discoverCard">
+                        <div class="discover-card-front" id="discoverFront"></div>
+                        <div class="discover-card-back" id="discoverBack"></div>
+                    </div>
+                </div>
+                <p class="discover-hint">点击卡片翻转，查看完整内容</p>
+                <div class="discover-actions">
+                    <button class="btn-ghost" onclick="loadNextDiscover()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                        换一个
+                    </button>
+                    <button class="btn-primary" id="discoverViewBtn" onclick="viewDiscoverPost()" style="display:none">
+                        查看详情
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日记编辑模态框 -->
+    <div id="diaryEditorModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeDiaryEditor()"></div>
+        <div class="modal-content diary-editor-content">
+            <div class="modal-header">
+                <h3>写日记</h3>
+                <button class="modal-close" onclick="closeDiaryEditor()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="diary-date-display" id="diaryDateDisplay"></div>
+                <textarea id="diaryContent" placeholder="今天想记录什么..." rows="6" maxlength="1000"></textarea>
+                <div class="diary-mood-select">
+                    <span class="diary-mood-label">今天的心情</span>
+                    <div class="diary-mood-options" id="diaryMoodOptions"></div>
+                </div>
+                <div class="diary-visibility">
+                    <label class="diary-visibility-toggle">
+                        <input type="checkbox" id="diaryPublic">
+                        <span class="diary-visibility-slider"></span>
+                        <span class="diary-visibility-text">允许陌生人在随机发现中看到</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeDiaryEditor()">取消</button>
+                <button class="btn-primary" onclick="saveDiary()">保存日记</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日记详情/查看模态框 -->
+    <div id="diaryViewModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeDiaryView()"></div>
+        <div class="modal-content diary-view-content">
+            <div class="modal-header">
+                <h3 id="diaryViewDate"></h3>
+                <button class="modal-close" onclick="closeDiaryView()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="diaryViewBody"></div>
+        </div>
+    </div>
+
+    <!-- 个人设置模态框 -->
+    <div id="settingsModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeSettingsModal()"></div>
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h3>我的身份</h3>
+                <button class="modal-close" onclick="closeSettingsModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 头像预览区（顶部） -->
+                <div class="settings-preview" id="settingsPreview"></div>
+
+                <!-- 昵称 -->
+                <div class="settings-section">
+                    <label class="settings-label">昵称</label>
+                    <div class="nickname-input-wrap">
+                        <input type="text" id="nicknameInput" placeholder="留空则使用随机昵称" maxlength="12">
+                        <button class="btn-primary btn-sm" onclick="randomizeNickname()">🎲 随机</button>
+                    </div>
+                </div>
+
+                <!-- 角色标签 -->
+                <div class="settings-section">
+                    <label class="settings-label">角色标签</label>
+                    <div class="style-select" id="roleSelect">
+                        <label class="style-option"><input type="radio" name="settingsRole" value="student"> 🎓 学生党</label>
+                        <label class="style-option"><input type="radio" name="settingsRole" value="worker"> 💼 打工人</label>
+                        <label class="style-option"><input type="radio" name="settingsRole" value="freelancer"> 🎨 自由职业</label>
+                        <label class="style-option"><input type="radio" name="settingsRole" value="other"> 🌟 神秘旅人</label>
+                    </div>
+                </div>
+
+                <!-- MBTI 人格 -->
+                <div class="settings-section">
+                    <label class="settings-label">MBTI 人格</label>
+                    <div class="mbti-select-wrap">
+                        <select id="mbtiSelect" onchange="onMbtiChange(this.value)">
+                            <option value="">未设置</option>
+                        </select>
+                        <button class="btn-ghost btn-sm" onclick="closeSettingsModal();openMbtiTest()">📝 测试</button>
+                    </div>
+                </div>
+
+                <!-- 外观设置 -->
+                <div class="settings-group-title">外观设置</div>
+
+                <!-- 头像风格 -->
+                <div class="settings-section">
+                    <label class="settings-label">头像风格</label>
+                    <div class="style-select" id="styleSelect">
+                        <label class="style-option"><input type="radio" name="avatarStyle" value="emoji"> 🎨 Emoji</label>
+                        <label class="style-option"><input type="radio" name="avatarStyle" value="gradient"> 🌈 渐变色块</label>
+                        <label class="style-option"><input type="radio" name="avatarStyle" value="letter"> ✏️ 首字母</label>
+                    </div>
+                </div>
+
+                <!-- Emoji 头像选择 -->
+                <div class="settings-section" id="emojiSection">
+                    <label class="settings-label">选择头像</label>
+                    <div class="emoji-grid" id="emojiGrid"></div>
+                </div>
+
+                <!-- 头像背景色 -->
+                <div class="settings-section">
+                    <label class="settings-label">背景色</label>
+                    <div class="color-grid" id="colorGrid"></div>
+                </div>
+
+                <!-- 主题切换 -->
+                <div class="settings-section">
+                    <label class="settings-label">主题风格</label>
+                    <button class="theme-picker-btn" onclick="closeSettingsModal();openThemeModal()">
+                        <span class="theme-picker-dot" id="themePickerDot"></span>
+                        <span id="themePickerName">月光森林</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="javascript:void(0)" onclick="closeSettingsModal();openAboutModal()" style="color:var(--text-muted);font-size:13px;text-decoration:none;cursor:pointer;">关于树洞</a>
+                <button class="btn-ghost" onclick="closeSettingsModal()">取消</button>
+                <button class="btn-primary" onclick="saveSettings()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 角色选择模态框（首次使用） -->
+    <div id="roleModal" class="modal" style="display:none">
+        <div class="modal-overlay"></div>
+        <div class="modal-content role-modal-content">
+            <div class="role-header">
+                <div class="role-logo">
+                    <svg width="56" height="56" viewBox="0 0 100 100" fill="none">
+                        <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+                        <path d="M50 15 C50 15, 25 35, 25 55 C25 70, 36 82, 50 85 C64 82, 75 70, 75 55 C75 35, 50 15, 50 15Z" fill="currentColor" opacity="0.1"/>
+                        <path d="M50 25 C50 25, 33 40, 33 55 C33 65, 40 74, 50 76 C60 74, 67 65, 67 55 C67 40, 50 25, 50 25Z" fill="currentColor" opacity="0.2"/>
+                        <circle cx="50" cy="52" r="8" fill="currentColor" opacity="0.4"/>
+                    </svg>
+                </div>
+                <h2>欢迎来到树洞</h2>
+                <p>选择一个角色标签，让大家更了解你的身份背景</p>
+                <p class="role-subtitle">不会暴露真实身份，仅作为社区角色标识</p>
+            </div>
+            <div class="role-body">
+                <div class="role-grid">
+                    <label class="role-card" data-role="student">
+                        <input type="radio" name="role" value="student">
+                        <div class="role-card-inner">
+                            <span class="role-emoji">🎓</span>
+                            <span class="role-name">学生党</span>
+                            <span class="role-desc">在校大学生/研究生</span>
+                        </div>
+                    </label>
+                    <label class="role-card" data-role="worker">
+                        <input type="radio" name="role" value="worker">
+                        <div class="role-card-inner">
+                            <span class="role-emoji">💼</span>
+                            <span class="role-name">打工人</span>
+                            <span class="role-desc">职场上班族</span>
+                        </div>
+                    </label>
+                    <label class="role-card" data-role="freelancer">
+                        <input type="radio" name="role" value="freelancer">
+                        <div class="role-card-inner">
+                            <span class="role-emoji">🎨</span>
+                            <span class="role-name">自由职业</span>
+                            <span class="role-desc">自由职业/创作者</span>
+                        </div>
+                    </label>
+                    <label class="role-card" data-role="other">
+                        <input type="radio" name="role" value="other">
+                        <div class="role-card-inner">
+                            <span class="role-emoji">🌟</span>
+                            <span class="role-name">神秘旅人</span>
+                            <span class="role-desc">不想被定义</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="role-footer">
+                <button class="btn-primary btn-lg" onclick="confirmRole()">进入树洞</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 移动端底部导航栏 -->
+    <nav class="mobile-tab-bar" id="mobileTabBar">
+        <button class="tab-item active" data-tab="home" onclick="navigate('home')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>首页</span>
+        </button>
+        <button class="tab-item" data-tab="letter" onclick="navigate('letter')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span>回信</span>
+        </button>
+        <button class="tab-item tab-create" onclick="navigate('create')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+        <button class="tab-item" data-tab="messages" onclick="navigate('messages')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>私信</span>
+        </button>
+        <button class="tab-item" data-tab="diary" onclick="navigate('diary')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <span>日记</span>
+        </button>
+        <button class="tab-item" data-tab="profile" onclick="openSettingsModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>我的</span>
+        </button>
+    </nav>
+
+    <!-- MBTI 测试 -->
+    <div id="mbtiTestModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeMbtiTest()"></div>
+        <div class="modal-content mbti-test-content">
+            <div class="modal-header">
+                <h3>📝 MBTI 快速测试</h3>
+                <button class="modal-close" onclick="closeMbtiTest()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="mbtiTestBody">
+                <!-- JS 动态渲染 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 主题选择 -->
+    <div id="themeModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeThemeModal()"></div>
+        <div class="modal-content theme-modal-content">
+            <div class="modal-header">
+                <h3>选择主题</h3>
+                <button class="modal-close" onclick="closeThemeModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="theme-grid" id="themeGrid">
+                    <div class="theme-card active" data-theme="light" onclick="selectTheme('light', this)">
+                        <div class="theme-preview" style="background:linear-gradient(135deg, #f8f6f1, #eef5f0)">
+                            <span style="color:#5b8c6e">🌿</span>
+                        </div>
+                        <span class="theme-name">月光森林</span>
+                        <span class="theme-check">✓</span>
+                    </div>
+                    <div class="theme-card" data-theme="dark" onclick="selectTheme('dark', this)">
+                        <div class="theme-preview" style="background:linear-gradient(135deg, #1c1b18, #252420)">
+                            <span style="color:#6fa882">🌙</span>
+                        </div>
+                        <span class="theme-name">暗夜森林</span>
+                        <span class="theme-check">✓</span>
+                    </div>
+                    <div class="theme-card" data-theme="starry" onclick="selectTheme('starry', this)">
+                        <div class="theme-preview" style="background:linear-gradient(135deg, #0f0f1a, #222238)">
+                            <span style="color:#7b8cde">✨</span>
+                        </div>
+                        <span class="theme-name">星空</span>
+                        <span class="theme-check">✓</span>
+                    </div>
+                    <div class="theme-card" data-theme="sakura" onclick="selectTheme('sakura', this)">
+                        <div class="theme-preview" style="background:linear-gradient(135deg, #fdf6f8, #f8eef2)">
+                            <span style="color:#d4728a">🌸</span>
+                        </div>
+                        <span class="theme-name">樱花</span>
+                        <span class="theme-check">✓</span>
+                    </div>
+                    <div class="theme-card" data-theme="sunny" onclick="selectTheme('sunny', this)">
+                        <div class="theme-preview" style="background:linear-gradient(135deg, #faf8f2, #f3efe5)">
+                            <span style="color:#d4944a">☀️</span>
+                        </div>
+                        <span class="theme-name">暖阳</span>
+                        <span class="theme-check">✓</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关于我们 -->
+    <div id="aboutModal" class="modal" style="display:none">
+        <div class="modal-overlay" onclick="closeAboutModal()"></div>
+        <div class="modal-content about-modal-content">
+            <div class="modal-header">
+                <h3>关于树洞</h3>
+                <button class="modal-close" onclick="closeAboutModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body about-body">
+                <div class="about-logo">
+                    <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                        <circle cx="32" cy="20" r="10" fill="currentColor" opacity="0.2"/>
+                        <circle cx="36" cy="18" r="9" fill="var(--bg-primary)"/>
+                        <path d="M32 18 C32 18, 18 30, 18 40 C18 48, 24 54, 32 56 C40 54, 46 48, 46 40 C46 30, 32 18, 32 18Z" fill="currentColor" opacity="0.15"/>
+                        <path d="M32 24 C32 24, 22 33, 22 40 C22 46, 26 50, 32 52 C38 50, 42 46, 42 40 C42 33, 32 24, 32 24Z" fill="currentColor" opacity="0.25"/>
+                        <path d="M28 46 C28 46, 28 38, 32 36 C36 38, 36 46, 36 46" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+                        <circle cx="48" cy="14" r="1.2" fill="currentColor" opacity="0.4"/>
+                        <circle cx="14" cy="24" r="0.8" fill="currentColor" opacity="0.3"/>
+                        <circle cx="52" cy="28" r="0.6" fill="currentColor" opacity="0.25"/>
+                    </svg>
+                </div>
+                <p class="about-tagline">一个安静的匿名角落</p>
+                <p class="about-subtitle">在这里，没有人认识你，也没有人评判你</p>
+
+                <div class="about-divider"></div>
+
+                <div class="about-section">
+                    <h4>🌿 为什么会有树洞</h4>
+                    <p>生活中有些话，不适合发朋友圈，不想告诉身边人，却需要一个出口。也许是一次深夜的崩溃，也许是一个不敢说出口的秘密，也许只是一些碎碎念。树洞就是这样一个地方——你说完就可以离开，没有人会追问。</p>
+                </div>
+
+                <div class="about-section">
+                    <h4>🌙 在这里你可以</h4>
+                    <ul class="about-features">
+                        <li><span class="about-feat-icon">📝</span> 写下任何想说的话，不需要伪装</li>
+                        <li><span class="about-feat-icon">💬</span> 和陌生人聊天，反而更容易敞开心扉</li>
+                        <li><span class="about-feat-icon">🎭</span> 用情绪标签记录此刻的心情</li>
+                        <li><span class="about-feat-icon">🌀</span> 随机发现另一个人的故事</li>
+                        <li><span class="about-feat-icon">🧠</span> 通过 MBTI 找到灵魂相似的人</li>
+                        <li><span class="about-feat-icon">🎭</span> 定制你的匿名形象，展现不同的自己</li>
+                    </ul>
+                </div>
+
+                <div class="about-section">
+                    <h4>🛡️ 你的隐私</h4>
+                    <p>树洞不会收集你的任何个人信息。没有账号、没有手机号、没有真实姓名。所有内容只存在于你的浏览器里，关掉就消失了。你在这里说的每一句话，都只属于你自己。</p>
+                </div>
+
+                <div class="about-section about-section-kind">
+                    <h4>💛 温柔提醒</h4>
+                    <p>这里的人和你一样，都是带着心事来的。如果你愿意，请给每一条认真写下的文字一点善意。一句温暖的评论，可能就是某个人今天收到的最好的礼物。</p>
+                </div>
+
+                <div class="about-footer-text">
+                    愿你在森林里找到片刻安宁 🌙
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
