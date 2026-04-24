@@ -1103,6 +1103,27 @@ input, textarea, select { font-family: inherit; }
     height: 12px;
 }
 
+.hero-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.hero-expand-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
 /* Hero badge — pill-shaped */
 .hero-badge {
     display: inline-flex;
@@ -2102,6 +2123,25 @@ input, textarea, select { font-family: inherit; }
     border-bottom: 1px solid var(--border);
 }
 
+.chat-back-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.chat-back-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
 .chat-header .anonymous-avatar {
     width: 36px;
     height: 36px;
@@ -3010,9 +3050,11 @@ input, textarea, select { font-family: inherit; }
     .nav-actions { gap: 4px; }
     .nav-identity .nav-identity-name { display: none; }
     .nav-identity { padding: 4px; border-radius: 50%; }
-    .messages-container { flex-direction: column; height: auto; min-height: calc(100vh - 120px); }
-    .messages-sidebar { width: 100%; border-right: none; max-height: 40vh; }
-    .messages-chat { min-height: 50vh; }
+    .messages-container { flex-direction: column; height: auto; min-height: calc(100vh - 120px); position: relative; }
+    .messages-sidebar { width: 100%; border-right: none; }
+    .messages-chat { min-height: 50vh; display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: var(--bg-secondary); }
+    .messages-chat.active { display: flex; }
+    .chat-back-btn { display: inline-flex; }
     .chat-bubble { max-width: 85%; }
     .post-card { padding: 18px; }
     .detail-title { font-size: 22px; }

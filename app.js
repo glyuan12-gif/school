@@ -551,17 +551,22 @@ function navigate(page, data = {}, pushState = true) {
 // ===== Hero 折叠 =====
 function toggleHero() {
     const header = document.getElementById('homeHeader');
+    const expandBtn = document.getElementById('heroExpandBtn');
     if (!header) return;
     header.classList.toggle('collapsed');
-    DB.set('hero_collapsed', header.classList.contains('collapsed'));
+    const isCollapsed = header.classList.contains('collapsed');
+    DB.set('hero_collapsed', isCollapsed);
+    if (expandBtn) expandBtn.style.display = isCollapsed ? 'inline-flex' : 'none';
 }
 
 function initHero() {
     const header = document.getElementById('homeHeader');
+    const expandBtn = document.getElementById('heroExpandBtn');
     if (!header) return;
     const collapsed = DB.get('hero_collapsed', false);
     if (collapsed) {
         header.classList.add('collapsed');
+        if (expandBtn) expandBtn.style.display = 'inline-flex';
     }
 }
 
@@ -849,6 +854,9 @@ function openConversation(convId) {
     const compat = Identity.getCompatibility(Identity.getMe().mbti, otherInfo.mbti);
     chatEl.innerHTML = `
         <div class="chat-header">
+            <button class="chat-back-btn" onclick="closeDmChatMobile()" title="返回">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
             ${Identity.getAvatarHTML(otherInfo, 36)}
             <div class="chat-header-info">
                 <span class="chat-header-name">${escapeHtml(otherInfo.name)}</span>
@@ -875,10 +883,18 @@ function openConversation(convId) {
         </div>
     `;
 
+    // 移动端：全屏显示聊天区域
+    chatEl.classList.add('active');
+
     setTimeout(() => {
         const chatMsgs = document.getElementById('chatMessages');
         if (chatMsgs) chatMsgs.scrollTop = chatMsgs.scrollHeight;
     }, 50);
+}
+
+function closeDmChatMobile() {
+    const chatEl = document.getElementById('messagesChat');
+    if (chatEl) chatEl.classList.remove('active');
 }
 
 function sendChatMessage() {
@@ -921,6 +937,8 @@ function filterByChannel(channel) {
 
 let searchTimeout;
 function handleSearch(value) {
+    const clearBtn = document.getElementById('searchClearBtn');
+    if (clearBtn) clearBtn.style.display = value.trim() ? 'flex' : 'none';
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         currentSearch = value.trim();
@@ -932,7 +950,10 @@ function clearSearch() {
     currentSearch = '';
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('searchClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
     renderPostList();
+    if (searchInput) searchInput.focus();
 }
 
 function filterByTag(tag) {
@@ -1499,9 +1520,14 @@ function viewDiaryByDate(dateStr) {
         // 直接打开编辑器写当天的日记
         editingDiaryId = null;
         openDiaryEditor();
-        const now = new Date(dateStr);
-        document.getElementById('diaryDateDisplay').textContent = 
-            `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+        const dateInput = document.getElementById('diaryDateInput');
+        if (dateInput) {
+            const now = new Date(dateStr);
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            dateInput.value = `${y}-${m}-${d}T09:00`;
+        }
     }
 }
 
@@ -2344,7 +2370,14 @@ function selectLetterTime(days, el) {
 
 function selectCustomLetterTime(input) {
     if (input.value) {
-        selectedLetterCustomTime = new Date(input.value).getTime();
+        const selectedTime = new Date(input.value).getTime();
+        if (selectedTime <= Date.now()) {
+            showToast('请选择未来的时间');
+            input.value = '';
+            selectedLetterCustomTime = null;
+            return;
+        }
+        selectedLetterCustomTime = selectedTime;
         // 取消预设按钮的选中状态
         document.querySelectorAll('.letter-time-options .diary-mood-btn').forEach(b => b.classList.remove('active'));
     } else {
@@ -2357,6 +2390,10 @@ function saveLetter() {
     if (!content) { showToast('写点什么给未来的自己吧'); return; }
 
     const openAt = selectedLetterCustomTime || (Date.now() + selectedLetterDays * 24 * 60 * 60 * 1000);
+    if (openAt <= Date.now()) {
+        showToast('请选择未来的时间');
+        return;
+    }
     Letter.create({ content, openAt });
     closeLetterEditor();
     renderLetterList();
@@ -2450,6 +2487,8 @@ function init() {
             { id: 'aboutModal', close: closeAboutModal },
             { id: 'diaryEditorModal', close: closeDiaryEditor },
             { id: 'diaryViewModal', close: closeDiaryView },
+            { id: 'letterEditorModal', close: () => { document.getElementById('letterEditorModal').style.display = 'none'; } },
+            { id: 'letterViewModal', close: () => { document.getElementById('letterViewModal').style.display = 'none'; } },
         ];
         for (const modal of modals) {
             const el = document.getElementById(modal.id);
